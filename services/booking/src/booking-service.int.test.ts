@@ -2,6 +2,7 @@
  * Integration tests: real Postgres + Redis (see README → Running tests).
  *   TEST_DATABASE_URL (default postgres://postgres:postgres@localhost:5432/showtime_booking_test)
  *   TEST_REDIS_URL    (default redis://localhost:6379/15)
+ * Each integration test file uses its own Redis database, because each one calls flushdb().
  */
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
@@ -53,6 +54,9 @@ beforeAll(async () => {
   await ensureDatabase(DB_URL);
   pool = createPool(DB_URL, 40);
   await runMigrations(pool, fileURLToPath(new URL('../migrations', import.meta.url)), logger);
+  // Start from empty tables: rows left by earlier runs (e.g. unpaid holds) would otherwise
+  // change what the expiry sweeper picks up and make results depend on run history.
+  await pool.query('TRUNCATE bookings, show_seats, shows, outbox, idempotency_keys');
   redis = new Redis(REDIS_URL);
   locks = new SeatLockManager(redis);
   service = new BookingService(pool, locks, PricingEngine.default(30_00), { notify: () => undefined }, { kick: () => undefined }, settings, logger);

@@ -22,7 +22,8 @@ export default defineConfig({
           environment: 'node',
           testTimeout: 30_000,
           hookTimeout: 30_000,
-          fileParallelism: false,
+          // Note: `fileParallelism` is ignored inside a project. Integration files run one at a
+          // time via the --no-file-parallelism flag in the test:integration npm script.
         },
       },
     ],

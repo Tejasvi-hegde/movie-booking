@@ -5,7 +5,8 @@ import { buildEvent, EventConsumer, EventPublisher } from './bus.js';
 import { TOPICS } from './events.js';
 import { createLogger } from './logger.js';
 
-const REDIS_URL = process.env.TEST_REDIS_URL ?? 'redis://localhost:6379/15';
+// Own Redis database (14): this file calls flushdb(), which must never touch another test file's data.
+const REDIS_URL = process.env.TEST_BUS_REDIS_URL ?? 'redis://localhost:6379/14';
 const logger = createLogger('test', 'silent');
 const redis = new Redis(REDIS_URL);
 const publisher = new EventPublisher(redis);

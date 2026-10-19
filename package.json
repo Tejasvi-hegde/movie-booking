@@ -20,8 +20,8 @@
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "vitest run --project unit",
-    "test:integration": "vitest run --project integration",
-    "test:all": "vitest run",
+    "test:integration": "vitest run --project integration --no-file-parallelism",
+    "test:all": "vitest run --no-file-parallelism",
     "e2e": "tsx scripts/e2e.ts",
     "race": "tsx scripts/race-test.ts",
     "seed": "npm run seed -w services/catalog"
