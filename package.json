@@ -1,0 +1,38 @@
+{
+  "name": "showtime",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Movie & event ticket booking platform built as microservices — seat locking, saga-based payments, idempotent APIs, event-driven notifications.",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "frontend"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n gateway,auth,catalog,booking,payment,notify,web -c cyan,green,yellow,magenta,blue,gray,white \"npm:dev -w services/gateway\" \"npm:dev -w services/auth\" \"npm:dev -w services/catalog\" \"npm:dev -w services/booking\" \"npm:dev -w services/payment\" \"npm:dev -w services/notification\" \"npm:dev -w frontend\"",
+    "dev:services": "concurrently -k -n gateway,auth,catalog,booking,payment,notify -c cyan,green,yellow,magenta,blue,gray \"npm:dev -w services/gateway\" \"npm:dev -w services/auth\" \"npm:dev -w services/catalog\" \"npm:dev -w services/booking\" \"npm:dev -w services/payment\" \"npm:dev -w services/notification\"",
+    "infra:up": "docker compose up -d postgres redis mongo mailpit",
+    "infra:down": "docker compose down",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "test:all": "vitest run",
+    "e2e": "tsx scripts/e2e.ts",
+    "race": "tsx scripts/race-test.ts",
+    "seed": "npm run seed -w services/catalog"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "concurrently": "^9.1.0",
+    "pino-pretty": "^13.0.0",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.0"
+  }
+}

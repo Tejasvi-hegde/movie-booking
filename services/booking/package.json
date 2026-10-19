@@ -1,0 +1,17 @@
+{
+  "name": "@showtime/booking",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsup",
+    "start": "node --enable-source-maps dist/index.js",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@showtime/common": "*",
+    "express": "^5.1.0",
+    "zod": "^3.24.1"
+  }
+}

@@ -1,0 +1,132 @@
+# Full stack:            docker compose up --build        → http://localhost:3000
+# Infrastructure only:   npm run infra:up  (then `npm run dev` runs the services on your machine)
+#
+# Emails sent by the notification service land in Mailpit: http://localhost:8025
+
+x-service: &service
+  build:
+    context: .
+    dockerfile: Dockerfile
+  restart: unless-stopped
+  environment: &env
+    NODE_ENV: production
+    LOG_LEVEL: info
+    REDIS_URL: redis://redis:6379
+    INTERNAL_TOKEN: ${INTERNAL_TOKEN:-dev-internal-token-change-me}
+    JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-me-please}
+  depends_on: &deps
+    postgres: { condition: service_healthy }
+    redis: { condition: service_healthy }
+
+services:
+  # ── infrastructure ──────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports: ['5432:5432']
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    ports: ['6379:6379']
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 3s
+      retries: 20
+
+  mongo:
+    image: mongo:7
+    ports: ['27017:27017']
+    volumes: [mongodata:/data/db]
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand("ping")']
+      interval: 5s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports: ['8025:8025', '1025:1025']
+
+  # ── services ────────────────────────────────────────────────────────────────
+  gateway:
+    <<: *service
+    build: { context: ., dockerfile: Dockerfile, args: { SERVICE: gateway } }
+    ports: ['8080:8080']
+    environment:
+      <<: *env
+      AUTH_URL: http://auth:4001
+      CATALOG_URL: http://catalog:4002
+      BOOKING_URL: http://booking:4003
+      PAYMENT_URL: http://payment:4004
+      NOTIFICATION_URL: http://notification:4005
+      CORS_ORIGINS: http://localhost:3000,http://localhost:5173
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
+    depends_on:
+      redis: { condition: service_healthy }
+
+  auth:
+    <<: *service
+    build: { context: ., dockerfile: Dockerfile, args: { SERVICE: auth } }
+    environment:
+      <<: *env
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/showtime_auth
+
+  catalog:
+    <<: *service
+    build: { context: ., dockerfile: Dockerfile, args: { SERVICE: catalog } }
+    environment:
+      <<: *env
+      MONGO_URL: mongodb://mongo:27017/showtime_catalog
+    depends_on:
+      <<: *deps
+      mongo: { condition: service_healthy }
+
+  booking:
+    <<: *service
+    build: { context: ., dockerfile: Dockerfile, args: { SERVICE: booking } }
+    environment:
+      <<: *env
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/showtime_booking
+
+  payment:
+    <<: *service
+    build: { context: ., dockerfile: Dockerfile, args: { SERVICE: payment } }
+    environment:
+      <<: *env
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/showtime_payment
+      BOOKING_URL: http://booking:4003
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-mock}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:-}
+
+  notification:
+    <<: *service
+    build: { context: ., dockerfile: Dockerfile, args: { SERVICE: notification } }
+    environment:
+      <<: *env
+      EMAIL_TRANSPORT: smtp
+      SMTP_HOST: mailpit
+      SMTP_PORT: '1025'
+    depends_on:
+      redis: { condition: service_healthy }
+
+  web:
+    build: { context: ., dockerfile: frontend/Dockerfile }
+    ports: ['3000:80']
+    depends_on: [gateway]
+
+volumes:
+  pgdata:
+  redisdata:
+  mongodata:
