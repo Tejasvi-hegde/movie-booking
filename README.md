@@ -1,5 +1,5 @@
 # Showtime 🎬
-
+[![CI](https://github.com/Tejasvi-hegde/movie-booking/actions/workflows/ci.yml/badge.svg)](https://github.com/Tejasvi-hegde/movie-booking/actions/workflows/ci.yml)
 A movie ticket booking platform (BookMyShow-style) built as **six microservices**. The interesting part is the hard problem underneath: **thousands of people clicking the same seat at the same moment, and nobody ever getting double-booked**, with payments that can fail, arrive late or be retried.
 
 > 100 users firing a hold on the same seat at the same instant → **exactly 1 succeeds, 99 get a clean 409**.
