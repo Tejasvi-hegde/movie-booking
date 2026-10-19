@@ -51,16 +51,18 @@ jobs:
         image: mongo:7
         ports: ['27017:27017']
     env:
-      NODE_ENV: production
       LOG_LEVEL: warn
       RATE_LIMIT_ENABLED: 'false' # the race test sends hundreds of users from one IP
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
+      # NODE_ENV must NOT be "production" here, or npm ci skips the build tools (tsup, tsc, vite).
       - run: npm ci
       - run: npm run build
       - name: Start services
+        env:
+          NODE_ENV: production
         run: |
           for s in auth catalog booking payment notification gateway; do
             (cd services/$s && nohup node dist/index.js > ../../$s.log 2>&1 &)
@@ -73,7 +75,11 @@ jobs:
       - run: USERS=100 CHAOS_SECONDS=10 npm run race
       - name: Service logs
         if: failure()
-        run: tail -n 100 *.log
+        run: |
+          shopt -s nullglob
+          logs=(*.log)
+          if [ ${#logs[@]} -eq 0 ]; then echo "No service logs (services were never started)"; exit 0; fi
+          tail -n 100 "${logs[@]}"
 
   docker:
     name: Docker images build
