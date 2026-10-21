@@ -2,7 +2,7 @@
   "name": "showtime",
   "private": true,
   "version": "1.0.0",
-  "description": "Movie & event ticket booking platform built as microservices — seat locking, saga-based payments, idempotent APIs, event-driven notifications.",
+  "description": "Movie & event ticket booking platform built as Node.js/Express microservices with a React frontend \u2014 seat locking, saga-based payments, idempotent APIs, event-driven notifications.",
   "type": "module",
   "workspaces": [
     "packages/*",
@@ -17,22 +17,17 @@
     "dev:services": "concurrently -k -n gateway,auth,catalog,booking,payment,notify -c cyan,green,yellow,magenta,blue,gray \"npm:dev -w services/gateway\" \"npm:dev -w services/auth\" \"npm:dev -w services/catalog\" \"npm:dev -w services/booking\" \"npm:dev -w services/payment\" \"npm:dev -w services/notification\"",
     "infra:up": "docker compose up -d postgres redis mongo mailpit",
     "infra:down": "docker compose down",
-    "build": "npm run build --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present",
+    "build": "npm run build -w frontend",
     "test": "vitest run --project unit",
     "test:integration": "vitest run --project integration --no-file-parallelism",
     "test:all": "vitest run --no-file-parallelism",
-    "e2e": "tsx scripts/e2e.ts",
-    "race": "tsx scripts/race-test.ts",
+    "e2e": "node scripts/e2e.js",
+    "race": "node scripts/race-test.js",
     "seed": "npm run seed -w services/catalog"
   },
   "devDependencies": {
-    "@types/node": "^22.10.0",
     "concurrently": "^9.1.0",
     "pino-pretty": "^13.0.0",
-    "tsup": "^8.3.5",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.2",
     "vitest": "^3.0.0"
   }
 }

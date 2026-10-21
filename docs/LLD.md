@@ -60,7 +60,7 @@ stateDiagram-v2
 
 ## Pricing: Strategy pattern
 
-`services/booking/src/domain/pricing.ts`
+`services/booking/src/domain/pricing.js`
 
 ```mermaid
 classDiagram

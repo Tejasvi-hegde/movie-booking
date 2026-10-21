@@ -1,5 +1,5 @@
 # Showtime 🎬
-[![CI](https://github.com/Tejasvi-hegde/movie-booking/actions/workflows/ci.yml/badge.svg)](https://github.com/Tejasvi-hegde/movie-booking/actions/workflows/ci.yml)
+
 A movie ticket booking platform (BookMyShow-style) built as **six microservices**. The interesting part is the hard problem underneath: **thousands of people clicking the same seat at the same moment, and nobody ever getting double-booked**, with payments that can fail, arrive late or be retried.
 
 > 100 users firing a hold on the same seat at the same instant → **exactly 1 succeeds, 99 get a clean 409**.
@@ -58,16 +58,16 @@ Each service owns its database (**database per service**). Services talk through
 
 | Problem | Solution | Code |
 |---|---|---|
-| Two users grab the same seat at once | Seats are locked in Redis with an **all-or-nothing Lua script** (`SET` with TTL for every seat, or none). Postgres guards *sold* seats with a conditional `UPDATE … WHERE status = 'AVAILABLE'` + row locks as the final word. | [`seat-lock.ts`](services/booking/src/seat-lock.ts), [`repository.ts`](services/booking/src/repository.ts) |
-| User walks away mid-payment | Hold expires: Redis TTL frees the lock even if a service crashes; a sweeper (`FOR UPDATE SKIP LOCKED`, safe on many replicas) expires the booking. | [`booking-service.ts`](services/booking/src/booking-service.ts) `expireDue` |
+| Two users grab the same seat at once | Seats are locked in Redis with an **all-or-nothing Lua script** (`SET` with TTL for every seat, or none). Postgres guards *sold* seats with a conditional `UPDATE … WHERE status = 'AVAILABLE'` + row locks as the final word. | [`seat-lock.js`](services/booking/src/seat-lock.js), [`repository.js`](services/booking/src/repository.js) |
+| User walks away mid-payment | Hold expires: Redis TTL frees the lock even if a service crashes; a sweeper (`FOR UPDATE SKIP LOCKED`, safe on many replicas) expires the booking. | [`booking-service.js`](services/booking/src/booking-service.js) `expireDue` |
 | Payment succeeds but seats can't be honoured (late webhook, show cancelled) | **Saga with compensation**: booking emits `booking.failed {refundRequired}` → payment refunds automatically. | `onPaymentSucceeded` |
-| "Update DB, then publish event" can half-fail | **Transactional outbox**: event row written in the same transaction; a relay publishes it. Consumers are idempotent. | [`outbox.ts`](packages/common/src/outbox.ts) |
-| Double-clicked "Pay", flaky mobile retries | **Idempotency keys** (Stripe-style): first response stored and replayed; same key + different body → 422. One open payment per booking enforced by a partial unique index. | [`idempotency.ts`](packages/common/src/idempotency.ts) |
-| Webhooks are retried by providers | Event id recorded in the same transaction as its effect → exactly-once processing. HMAC signature verified with `timingSafeEqual`. | [`payment-service.ts`](services/payment/src/payment-service.ts) |
-| Poison messages blocking a queue | Consumer groups with retry via `XCLAIM`, **dead-letter stream** after N deliveries. | [`bus.ts`](packages/common/src/bus.ts) |
-| A slow dependency taking everything down | Timeouts, retries with exponential backoff + jitter (GET only), **circuit breaker**. | [`service-client.ts`](packages/common/src/service-client.ts) |
-| Stolen refresh tokens | Refresh tokens rotate on every use; reusing an old one revokes the whole session family. | [`auth-service.ts`](services/auth/src/auth-service.ts) |
-| Someone bypasses the gateway | Gateway strips client-sent `x-user-*` headers; services reject requests without the internal token. | [`http.ts`](packages/common/src/http.ts) |
+| "Update DB, then publish event" can half-fail | **Transactional outbox**: event row written in the same transaction; a relay publishes it. Consumers are idempotent. | [`outbox.js`](packages/common/src/outbox.js) |
+| Double-clicked "Pay", flaky mobile retries | **Idempotency keys** (Stripe-style): first response stored and replayed; same key + different body → 422. One open payment per booking enforced by a partial unique index. | [`idempotency.js`](packages/common/src/idempotency.js) |
+| Webhooks are retried by providers | Event id recorded in the same transaction as its effect → exactly-once processing. HMAC signature verified with `timingSafeEqual`. | [`payment-service.js`](services/payment/src/payment-service.js) |
+| Poison messages blocking a queue | Consumer groups with retry via `XCLAIM`, **dead-letter stream** after N deliveries. | [`bus.js`](packages/common/src/bus.js) |
+| A slow dependency taking everything down | Timeouts, retries with exponential backoff + jitter (GET only), **circuit breaker**. | [`service-client.js`](packages/common/src/service-client.js) |
+| Stolen refresh tokens | Refresh tokens rotate on every use; reusing an old one revokes the whole session family. | [`auth-service.js`](services/auth/src/auth-service.js) |
+| Someone bypasses the gateway | Gateway strips client-sent `x-user-*` headers; services reject requests without the internal token. | [`http.js`](packages/common/src/http.js) |
 
 ## Measured results
 
@@ -119,7 +119,7 @@ k6 run load-tests/k6/double-booking.js
 k6 run load-tests/k6/browse.js
 ```
 
-CI (GitHub Actions) runs typecheck, unit + integration tests, boots the full stack and runs the e2e and race tests, and builds every Docker image.
+CI (GitHub Actions) runs unit + integration tests, builds the frontend, boots the full stack and runs the e2e and race tests, and builds every Docker image.
 
 ## Project structure
 
@@ -132,13 +132,13 @@ services/
   catalog/              films, venues, shows (MongoDB), cache, seed data
   booking/
     src/domain/         Booking aggregate, State pattern, Pricing strategies (pure, unit-tested)
-    src/seat-lock.ts    Redis Lua seat locks
-    src/booking-service.ts   holds, saga steps, expiry, cancellation
+    src/seat-lock.js    Redis Lua seat locks
+    src/booking-service.js   holds, saga steps, expiry, cancellation
   payment/
     src/providers/      PaymentProvider interface, Mock + Razorpay, Factory
   notification/         templates, channels (email, in-app), dispatcher
-frontend/               React + TypeScript + React Query
-scripts/                e2e.ts, race-test.ts
+frontend/               React + React Query (Vite)
+scripts/                e2e.js, race-test.js
 load-tests/k6/          k6 scripts
 docs/                   architecture, LLD, design decisions
 ```
@@ -168,7 +168,7 @@ All routes go through the gateway under `/api`.
 
 ## Tech stack
 
-Node.js 22 · TypeScript · Express 5 · PostgreSQL · MongoDB · Redis (locks, cache, Streams, pub/sub, rate limiting) · React 18 · React Query · Vite · Docker Compose · GitHub Actions · Vitest · k6 · zod · pino · Prometheus metrics (`/metrics` on every service)
+Node.js 22 · JavaScript (ES modules) · Express 5 · PostgreSQL · MongoDB · Redis (locks, cache, Streams, pub/sub, rate limiting) · React 18 · React Query · Vite · Docker Compose · GitHub Actions · Vitest · k6 · zod · pino · Prometheus metrics (`/metrics` on every service)
 
 ## Roadmap
 

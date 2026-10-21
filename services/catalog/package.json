@@ -4,11 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsup",
-    "start": "node --enable-source-maps dist/index.js",
-    "seed": "tsx src/seed-cli.ts",
-    "typecheck": "tsc -p tsconfig.json"
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "seed": "node src/seed-cli.js"
   },
   "dependencies": {
     "@showtime/common": "*",

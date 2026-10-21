@@ -4,18 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsup",
-    "start": "node --enable-source-maps dist/index.js",
-    "typecheck": "tsc -p tsconfig.json"
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js"
   },
   "dependencies": {
     "@showtime/common": "*",
     "express": "^5.1.0",
     "nodemailer": "^6.9.16",
     "zod": "^3.24.1"
-  },
-  "devDependencies": {
-    "@types/nodemailer": "^6.4.17"
   }
 }

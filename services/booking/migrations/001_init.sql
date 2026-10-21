@@ -15,7 +15,7 @@ CREATE TABLE shows (
 );
 
 -- Seat inventory: the source of truth for what is SOLD.
--- (Temporary holds live in Redis; see seat-lock.ts.)
+-- (Temporary holds live in Redis; see seat-lock.js.)
 CREATE TABLE show_seats (
   show_id     TEXT NOT NULL REFERENCES shows (show_id),
   seat_id     TEXT NOT NULL,

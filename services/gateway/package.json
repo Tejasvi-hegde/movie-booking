@@ -4,10 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsup",
-    "start": "node --enable-source-maps dist/index.js",
-    "typecheck": "tsc -p tsconfig.json"
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js"
   },
   "dependencies": {
     "@showtime/common": "*",
@@ -18,9 +16,5 @@
     "jsonwebtoken": "^9.0.2",
     "pino-http": "^10.4.0",
     "zod": "^3.24.1"
-  },
-  "devDependencies": {
-    "@types/cors": "^2.8.17",
-    "@types/jsonwebtoken": "^9.0.7"
   }
 }
